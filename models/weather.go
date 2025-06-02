@@ -3,7 +3,6 @@ package models
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 )
 
@@ -17,8 +16,8 @@ type WeatherModel struct {
 	} `json:"weather"`
 }
 
-func GetWeather(city, apiKey string) (*WeatherModel, error) {
-	url := fmt.Sprintf("https://api.openweathermap.org/data/2.5/weather?q=%s&appid=%s", city, apiKey)
+func GetWeather(city, apiKey, units string) (*WeatherModel, error) {
+	url := fmt.Sprintf("https://api.openweathermap.org/data/2.5/weather?q=%s&appid=%s&units=%s", city, apiKey, units)
 
 	resp, err := http.Get(url)
 
@@ -27,18 +26,9 @@ func GetWeather(city, apiKey string) (*WeatherModel, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("failed to get weather: status code %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-
-	if err != nil {
+	var result WeatherModel
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
 	}
-	var weatherResp WeatherModel
-	if err := json.Unmarshal(body, &weatherResp); err != nil {
-		return nil, err
-	}
-	return &weatherResp, nil
+	return &result, nil
 }
